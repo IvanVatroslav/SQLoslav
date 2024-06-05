@@ -1,10 +1,11 @@
 import os
 import logging
-from fastapi import HTTPException, Request
+from fastapi import Request, HTTPException
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from dotenv import load_dotenv
 from message_processor import MessageProcessor
+from data_base import Database
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -13,6 +14,7 @@ class SlackBot:
         self.client = WebClient(token=os.getenv('SLACK_BOT_TOKEN'))
         self.processor = MessageProcessor()
         self.setup_logging()
+        self.db = Database('VERTICA')  # Initialize Database instance for Vertica
 
     def setup_logging(self):
         logging.basicConfig(level=logging.INFO)
@@ -32,7 +34,7 @@ class SlackBot:
             logging.info(f"Message received: {user_message}")
             logging.info(f"Channel ID: {channel_id}")
 
-            response_message = self.processor.process_message(user_message)
+            response_message = self.processor.process_message(user_message, self.db)
 
             try:
                 self.client.chat_postMessage(channel=channel_id, text=response_message)
