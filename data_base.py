@@ -7,42 +7,34 @@ import logging
 
 load_dotenv()  # Load environment variables from .env file
 
-class Database:
-    ORACLE_CONFIG = {
-        'SINONIMI': {
-            'service_name': 'ugvirga.ugbb.net',
-            'user': 'ugvirga_stage_user',
-            'password': 'pZYhZ6hY'  # replace with actual password
-        },
-        'SHOPSTER': {
-            'service_name': 'se2prod.ugbb.net',
-            'user': 'shopster',
-            'password': 'shop5terPsw1706'  # replace with actual password
-        },
-        'VIRGA_TEST': {
-            'service_name': 'ugvirgatest.ugbb.net',
-            'user': 'infapc',
-            'password': 'sSwyGM9d'  # replace with actual password
-        },
-        'VIRGA': {
-            'service_name': 'ugvirga.ugbb.net',
-            'user': 'infapc',
-            'password': 'P6DsQLeD'  # replace with actual password
-        }
-    }
 
+class Database:
     def __init__(self, db_name):
         db_name_upper = db_name.upper()
-        if db_name_upper in self.ORACLE_CONFIG:
-            config = self.ORACLE_CONFIG[db_name_upper]
+        if db_name_upper == 'SINONIMI':
             self.host = '172.16.22.44'
             self.port = '1521'
-            self.service_name = config['service_name']
-            self.user = config['user']
-            self.password = config['password']
-            self.connection_string = f'oracle+cx_oracle://{self.user}:{self.password}@{self.host}:{self.port}/?service_name={self.service_name}'
-            self.engine = create_engine(self.connection_string)
-            self.db_type = 'oracle'
+            self.service_name = os.getenv('ORACLE_SINONIMI_SERVICE_NAME')
+            self.user = os.getenv('ORACLE_SINONIMI_USER')
+            self.password = os.getenv('ORACLE_SINONIMI_PASSWORD')
+        elif db_name_upper == 'SHOPSTER':
+            self.host = '172.16.22.44'
+            self.port = '1521'
+            self.service_name = os.getenv('ORACLE_SHOPSTER_SERVICE_NAME')
+            self.user = os.getenv('ORACLE_SHOPSTER_USER')
+            self.password = os.getenv('ORACLE_SHOPSTER_PASSWORD')
+        elif db_name_upper == 'VIRGA_TEST':
+            self.host = '172.16.22.44'
+            self.port = '1521'
+            self.service_name = os.getenv('ORACLE_VIRGA_TEST_SERVICE_NAME')
+            self.user = os.getenv('ORACLE_VIRGA_TEST_USER')
+            self.password = os.getenv('ORACLE_VIRGA_TEST_PASSWORD')
+        elif db_name_upper == 'VIRGA':
+            self.host = '172.16.22.44'
+            self.port = '1521'
+            self.service_name = os.getenv('ORACLE_VIRGA_SERVICE_NAME')
+            self.user = os.getenv('ORACLE_VIRGA_USER')
+            self.password = os.getenv('ORACLE_VIRGA_PASSWORD')
         elif db_name_upper == 'VERTICA':
             self.conn_info = {
                 'host': os.getenv('VERTICA_HOST'),
@@ -54,6 +46,11 @@ class Database:
             self.db_type = 'vertica'
         else:
             raise ValueError(f"Database configuration for '{db_name}' not found.")
+
+        if db_name_upper in ['SINONIMI', 'SHOPSTER', 'VIRGA_TEST', 'VIRGA']:
+            self.connection_string = f'oracle+cx_oracle://{self.user}:{self.password}@{self.host}:{self.port}/?service_name={self.service_name}'
+            self.engine = create_engine(self.connection_string)
+            self.db_type = 'oracle'
 
     def query(self, sql_query):
         logging.info(f"Database query: {sql_query}")
