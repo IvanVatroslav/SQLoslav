@@ -9,19 +9,28 @@ from data_base import Database
 
 load_dotenv()  # Load environment variables from .env file
 
+
 class SlackBot:
     def __init__(self):
         self.client = WebClient(token=os.getenv('SLACK_BOT_TOKEN'))
         self.processor = MessageProcessor()
         self.setup_logging()
         self.db = Database('VERTICA')  # Initialize Database instance for Vertica
+        self.processed_events = set()
 
     def setup_logging(self):
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
     async def handle_event(self, request: Request):
         data = await request.json()
         logging.info(f"Received request: {data}")
+
+        event_id = data.get('event_id')
+        if event_id in self.processed_events:
+            logging.info(f"Event {event_id} has already been processed. Skipping.")
+            return {"status": "ok"}
+
+        self.processed_events.add(event_id)
 
         if data['type'] == "url_verification":
             logging.info(f"Challenge received: {data['challenge']}")
