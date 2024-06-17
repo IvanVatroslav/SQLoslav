@@ -35,19 +35,23 @@ class SlackBot:
             logging.info(f"Challenge received: {data['challenge']}")
             return {"challenge": data['challenge']}
 
-        if data.get('event') and data['event'].get('type') == 'message' and 'bot_id' not in data['event']:
-            user_message = data['event']['text']
-
+        event = data.get('event', {})
+        if event.get('type') == 'message' and 'bot_id' not in event:
+            user_message = event.get('text', '')
             logging.info(f"Message received: {user_message}")
             logging.info(f"Channel ID: {channel_id}")
 
-            response_message = self.processor.process_message(user_message, self.db, channel_id)
-
-            try:
-                self.client.chat_postMessage(channel=channel_id, text=response_message)
-                logging.info(f"Message sent: {response_message}")
-            except SlackApiError as e:
-                logging.error(f"Slack API error: {e.response['error']}")
-                raise HTTPException(status_code=400, detail=f"Slack API error: {e.response['error']}")
+            if user_message:
+                response_message = self.processor.process_message(user_message, self.db, channel_id)
+                try:
+                    self.client.chat_postMessage(channel=channel_id, text=response_message)
+                    logging.info(f"Message sent: {response_message}")
+                except SlackApiError as e:
+                    logging.error(f"Slack API error: {e.response['error']}")
+                    raise HTTPException(status_code=400, detail=f"Slack API error: {e.response['error']}")
+            else:
+                logging.warning("Received a message event without text content.")
+        else:
+            logging.warning("Received an unsupported event type or a message from a bot.")
 
         return {"status": "ok"}
