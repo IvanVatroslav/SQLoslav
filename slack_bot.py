@@ -9,7 +9,6 @@ from data_base import Database
 
 load_dotenv()  # Load environment variables from .env file
 
-
 class SlackBot:
     def __init__(self):
         self.client = WebClient(token=os.getenv('SLACK_BOT_TOKEN'))
@@ -21,7 +20,7 @@ class SlackBot:
     def setup_logging(self):
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-    async def handle_event(self, request: Request):
+    async def handle_event(self, request: Request, channel_id: str):
         data = await request.json()
         logging.info(f"Received request: {data}")
 
@@ -38,7 +37,6 @@ class SlackBot:
 
         if data.get('event') and data['event'].get('type') == 'message' and 'bot_id' not in data['event']:
             user_message = data['event']['text']
-            channel_id = data['event']['channel']
 
             logging.info(f"Message received: {user_message}")
             logging.info(f"Channel ID: {channel_id}")

@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 import uvicorn
 from slack_bot import SlackBot
+import logging
 
 app = FastAPI()
 slack_bot = SlackBot()
@@ -8,7 +9,10 @@ slack_bot = SlackBot()
 
 @app.post("/slack/events")
 async def slack_events(request: Request):
-    return await slack_bot.handle_event(request)
+    data = await request.json()
+    channel_id = data.get('event', {}).get('channel')
+    logging.info(f"Received event for channel: {channel_id}")
+    return await slack_bot.handle_event(request, channel_id)
 
 
 if __name__ == "__main__":

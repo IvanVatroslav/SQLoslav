@@ -7,10 +7,10 @@ class SlackUploader:
     def __init__(self, token: str):
         self.token = token
 
-    def get_upload_url(self, file_path: str) -> str:
+    def get_upload_url(self, file_path: str):
         logging.info("Requesting upload URL from Slack")
         headers = {
-            'Authorization': f'Bearer {self.token}',
+            'Authorization': f'Bearer ' + self.token,
             'Content-Type': 'application/x-www-form-urlencoded'
         }
         filename = os.path.basename(file_path)
@@ -28,7 +28,7 @@ class SlackUploader:
             headers=headers,
             data=data  # Use `data` instead of `json` for x-www-form-urlencoded
         )
-        logging.info(f"Response from Slack: {response.text}")
+        logging.info(f"Response from Slack (get_upload_url): {response.text}")
         response.raise_for_status()
         response_json = response.json()
         if response_json.get('ok'):
@@ -40,11 +40,6 @@ class SlackUploader:
             error_message = response_json.get('error', 'Unknown error')
             logging.error(f"Failed to get upload URL from Slack: {error_message}")
             raise Exception(f"Failed to get upload URL from Slack: {error_message}")
-
-
-
-
-
 
     def upload_file_content(self, upload_url: str, file_path: str):
         logging.info(f"Uploading file content to URL: {upload_url}")
@@ -58,30 +53,30 @@ class SlackUploader:
                 },
                 data=file_content
             )
-        logging.info(f"Response from file upload: {response.status_code}")
+        logging.info(f"Response from file upload (upload_file_content): {response.status_code}")
         response.raise_for_status()
         logging.info(f"File content uploaded successfully to: {upload_url}")
 
-    def complete_upload(self, file_id: str, file_path: str, channel: str) -> str:
-        logging.info(f"Completing file upload for File ID: {file_id}")
+    def complete_upload(self, file_id: str, file_path: str, channel_id: str):
+        logging.info(f"Completing file upload for File ID: {file_id}, Channel ID: {channel_id}")
         headers = {
             'Authorization': f'Bearer {self.token}',
             'Content-Type': 'application/json'
         }
         data = {
-            'files': [{'id': file_id, 'filename': os.path.basename(file_path)}],
-            'channels': [channel]
+            'files': [{'id': file_id}],
+            'channel_id': channel_id
         }
         response = requests.post(
             url='https://slack.com/api/files.completeUploadExternal',
             headers=headers,
             json=data
         )
-        logging.info(f"Response from Slack: {response.text}")
+        logging.info(f"Response from Slack (complete_upload): {response.text}")
         response.raise_for_status()
         response_json = response.json()
         if response_json.get('ok'):
-            file_url = response_json['file']['permalink']
+            file_url = response_json['files'][0]['permalink']
             logging.info(f"File upload completed successfully: {file_url}")
             return file_url
         else:
@@ -89,8 +84,8 @@ class SlackUploader:
             logging.error(f"Failed to complete file upload: {error_message}")
             raise Exception(f"Failed to complete file upload: {error_message}")
 
-    def upload_file_to_slack(self, file_path: str, channel_id: str) -> str:
-        logging.info(f"Uploading file to Slack: {file_path}")
+    def upload_file_to_slack(self, file_path: str, channel_id: str):
+        logging.info(f"Uploading file to Slack: {file_path} to channel: {channel_id}")
         try:
             upload_url, file_id = self.get_upload_url(file_path)
             self.upload_file_content(upload_url, file_path)
