@@ -43,7 +43,7 @@ class SlackBot:
             logging.info(f"Message received: {user_message}")
             logging.info(f"Channel ID: {channel_id}")
 
-            response_message = self.processor.process_message(user_message, self.db)
+            response_message = self.processor.process_message(user_message, self.db, channel_id)
 
             try:
                 self.client.chat_postMessage(channel=channel_id, text=response_message)

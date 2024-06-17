@@ -1,19 +1,18 @@
 import logging
-import os
 from data_base import Database
 from data_frame_handler import DataFrameHandler
 from slack_uploader import SlackUploader
-
-# Configure logging to output to the terminal
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+from error_handler import ErrorHandler
+import os
 
 
 class MessageProcessor:
     def __init__(self):
         self.df_handler = DataFrameHandler()
-        self.slack_uploader = SlackUploader(channel=os.getenv('SLACK_CHANNEL_ID'), token=os.getenv('SLACK_BOT_TOKEN'))
+        self.slack_uploader = SlackUploader(token=os.getenv('SLACK_BOT_TOKEN'))
+        self.error_handler = ErrorHandler()
 
-    def process_message(self, message: str, db: Database) -> str:
+    def process_message(self, message: str, db: Database, channel_id: str) -> str:
         if message.lower().startswith("sql, vertica"):
             sql_query = message[len("SQL, vertica"):].strip()
             if not sql_query:
@@ -39,24 +38,24 @@ class MessageProcessor:
                     file_path = self.df_handler.save_dataframe_to_file(result_df)
                     logging.info(f"Data saved to file: {file_path}")
                 except Exception as e:
-                    logging.error(f"Error saving data to file: {e}")
-                    return f"Error saving data to file: {e}"
+                    error_message = self.error_handler.handle_error(e, "saving data to file")
+                    return error_message
 
                 # Attempt to upload the file
                 try:
-                    file_url = self.slack_uploader.upload_file_to_slack(file_path)
+                    file_url = self.slack_uploader.upload_file_to_slack(file_path, channel_id)
                     logging.info(f"File uploaded successfully: {file_url}")
                     slack_data += f"\nFull results: {file_url}"
                 except Exception as e:
-                    logging.error(f"Error uploading file: {e}")
-                    slack_data += "\nError uploading file to Slack."
+                    error_message = self.error_handler.handle_error(e, "uploading file to Slack")
+                    slack_data += f"\n{error_message}"
 
                 logging.info(f"Prepared Slack payload: {slack_data}")
                 return slack_data
 
             except Exception as e:
-                logging.error(f"Error executing query: {e}")
-                return f"Error executing query: {e}"
+                error_message = self.error_handler.handle_error(e, "executing query")
+                return error_message
         else:
             return f"You said: {message}"
 
