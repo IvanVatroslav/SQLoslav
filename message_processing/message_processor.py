@@ -1,16 +1,20 @@
 import logging
-from data_base import Database
-from data_frame_handler import DataFrameHandler
-from slack_uploader import SlackUploader
-from error_handler import ErrorHandler
 import os
+from data.data_base import Database
+from slack_uploader.slack_uploader import SlackUploader
+from error_handling.error_handler import ErrorHandler
+from message_processing.message_cleaner import MessageCleaner
+from message_processing.slack_payload_preparer import SlackPayloadPreparer
+from message_processing.sql_executor import SQLExecutor
 
 
 class MessageProcessor:
     def __init__(self):
-        self.df_handler = DataFrameHandler()
+        self.sql_executor = SQLExecutor()
         self.slack_uploader = SlackUploader(token=os.getenv('SLACK_BOT_TOKEN'))
         self.error_handler = ErrorHandler()
+        self.message_cleaner = MessageCleaner()
+        self.slack_payload_preparer = SlackPayloadPreparer()
 
     def process_message(self, message: str, db: Database, channel_id: str) -> str:
         logging.info(f"Processing message for channel: {channel_id}")
@@ -20,27 +24,18 @@ class MessageProcessor:
                 return "No SQL query provided."
 
             try:
-                clean_query = self.clean_query(sql_query)
-                logging.info(f"Executing SQL query: {clean_query}")
-                result_df = db.query(clean_query)
-                logging.info(f"Query result DataFrame: {result_df}")
+                clean_query = self.message_cleaner.clean_query(sql_query)
+                result_df = self.sql_executor.execute_sql(clean_query, db)
 
                 if result_df.empty:
                     logging.info("Query executed successfully but returned no results.")
-                    return f"Query executed successfully but returned no results.\nSQL query: ```{sql_query}```"
+                    return f"Query executed successfully but returned no results.\nSQL query: ```{clean_query}```"
 
-                summary_df = self.df_handler.summarize_dataframe(result_df)
-                markdown_table = self.df_handler.convert_df_to_markdown(summary_df)
-                slack_data = self.prepare_slack_payload(markdown_table)
+                markdown_table, file_path = self.slack_payload_preparer.summarize_and_save(result_df)
+                slack_data = self.slack_payload_preparer.prepare_slack_payload(markdown_table)
 
                 try:
-                    file_path = self.df_handler.save_dataframe_to_file(result_df)
                     logging.info(f"Data saved to file: {file_path}")
-                except Exception as e:
-                    error_message = self.error_handler.handle_error(e, "saving data to file", channel_id)
-                    return error_message
-
-                try:
                     logging.info(f"Attempting to upload file to Slack channel: {channel_id}")
                     file_url = self.slack_uploader.upload_file_to_slack(file_path, channel_id)
                     logging.info(f"File uploaded successfully: {file_url}")
@@ -57,9 +52,3 @@ class MessageProcessor:
                 return error_message
         else:
             return f"You said: {message}"
-
-    def clean_query(self, query: str) -> str:
-        return query.strip('`')
-
-    def prepare_slack_payload(self, markdown_table: str) -> str:
-        return f"```\n{markdown_table}\n```"
