@@ -1,14 +1,17 @@
 import logging
-from data.data_base import Database
-from data.data_frame_handler import DataFrameHandler
+from database.database_factory import DatabaseFactory
+from processing.data_frame_handler import DataFrameHandler
 
 
 class SQLExecutor:
     def __init__(self):
         self.df_handler = DataFrameHandler()
 
-    def execute_sql(self, sql_query: str, db: Database):
+    @staticmethod
+    def execute_sql(sql_query: str, db_type: str):
         logging.info(f"Executing SQL query: {sql_query}")
+
+        db = DatabaseFactory.get_database(db_type)
         result_df = db.query(sql_query)
         logging.info(f"Query result DataFrame: {result_df}")
         return result_df

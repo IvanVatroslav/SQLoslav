@@ -4,15 +4,16 @@ import os
 
 
 class FileUploader:
-    def upload_file_content(self, upload_url: str, file_path: str):
+    @staticmethod
+    def upload_file_content(upload_url: str, file_path: str):
         logging.info(f"Uploading file content to URL: {upload_url}")
         filesize = os.path.getsize(file_path)
         with open(file_path, 'rb') as file_content:
             response = requests.put(
                 url=upload_url,
                 headers={
-                    'Content-Type': 'application/octet-stream; charset=utf-8',
-                    'Content-Length': str(filesize)  # Adding the Content-Length header
+                    'Content-Type': 'text/csv; charset=utf-8',
+                    'Content-Length': str(filesize)
                 },
                 data=file_content
             )

@@ -22,7 +22,9 @@ class UploadURLRetriever:
             'length': filesize,
             'channels': channel_id,
             'alt_txt': 'File uploaded by bot',
-            'snippet_type': 'csv'
+            'snippet_type': 'csv',
+            'filetype': 'csv',
+            'mime_type': 'text/csv'
         }
 
         logging.info(f"Payload for get_upload_url: {data}")

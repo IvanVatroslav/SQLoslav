@@ -1,27 +1,46 @@
+import os
 import logging
-from slack_uploader.upload_url_retriever import UploadURLRetriever
-from slack_uploader.file_uploader import FileUploader
-from slack_uploader.upload_completer import UploadCompleter
-from slack_uploader.file_downloader import FileDownloader
+from slack_sdk.web.async_client import AsyncWebClient
+import aiohttp
 
 
 class SlackUploader:
     def __init__(self, token: str):
-        self.url_retriever = UploadURLRetriever(token)
-        self.file_uploader = FileUploader()
-        self.upload_completer = UploadCompleter(token)
-        self.file_downloader = FileDownloader(token)
+        self.client = AsyncWebClient(token=token)
 
-    def upload_file_to_slack(self, file_path: str, channel_id: str):
+    async def upload_file_to_slack(self, file_path: str, channel_id: str) -> str:
         logging.info(f"Uploading file to Slack: {file_path} to channel: {channel_id}")
         try:
-            upload_url, file_id = self.url_retriever.get_upload_url(file_path, channel_id)
-            self.file_uploader.upload_file_content(upload_url, file_path)
-            file_url = self.upload_completer.complete_upload(file_id, file_path, channel_id)
-            return file_url  # Using permalink to ensure preview
+            with open(file_path, 'rb') as file_content:
+                response = await self.client.files_upload_v2(
+                    channel=channel_id,
+                    file=file_content,
+                    filename=os.path.basename(file_path),
+                    initial_comment="Here's the query result file."
+                )
+            file_url = response['file']['permalink']
+            logging.info(f"File uploaded successfully. URL: {file_url}")
+            return file_url
         except Exception as e:
-            logging.error(f"Error uploading file: {e}")
+            logging.error(f"Error uploading file: {str(e)}")
             raise
 
-    def download_file(self, file_url: str, filename: str) -> str:
-        return self.file_downloader.download_file(file_url, filename)
+    async def download_file(self, file_url: str, filename: str) -> str:
+        logging.info(f"Downloading file from Slack: {file_url}")
+        headers = {"Authorization": f"Bearer {self.client.token}"}
+        async with aiohttp.ClientSession() as session:
+            async with session.get(file_url, headers=headers) as resp:
+                if resp.status == 200:
+                    download_path = os.path.join('downloads', filename)
+                    os.makedirs('downloads', exist_ok=True)
+                    with open(download_path, 'wb') as f:
+                        while True:
+                            chunk = await resp.content.read(8192)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                    logging.info(f"File downloaded successfully: {download_path}")
+                    return download_path
+                else:
+                    logging.error(f"Failed to download file. Status: {resp.status}")
+                    raise Exception(f"File download failed with status {resp.status}")
