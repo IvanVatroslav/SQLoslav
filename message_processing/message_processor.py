@@ -30,17 +30,11 @@ class MessageProcessor:
                 logging.info("Query executed successfully but returned no results.")
                 return self.format_no_results_message(sql_query)
 
-            markdown_table, file_path = self.sql_executor.summarize_and_save(result_df)
-            slack_data = self.parser.prepare_slack_payload(markdown_table)
+            summary_df, file_path = self.sql_executor.summarize_and_save(result_df)
+            slack_data = self.parser.prepare_slack_payload(summary_df.to_string())
 
             try:
                 file_url = await self.slack_uploader.upload_file_to_slack(file_path, channel_id)
-                slack_data += f"\nFull results: {file_url}"
-
-                # Verify the uploaded file
-                verification_result = await self.verify_uploaded_file(file_url, file_path)
-                if not verification_result:
-                    slack_data += "\nWarning: The uploaded file could not be verified. It may not be accessible."
             except Exception as e:
                 error_message = self.error_handler.handle_error(e, "uploading file to Slack", channel_id)
                 slack_data += f"\n{error_message}"

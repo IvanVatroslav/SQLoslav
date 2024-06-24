@@ -18,6 +18,5 @@ class SQLExecutor:
 
     def summarize_and_save(self, result_df):
         summary_df = self.df_handler.summarize_dataframe(result_df)
-        markdown_table = self.df_handler.convert_df_to_markdown(summary_df)
         file_path = self.df_handler.save_dataframe_to_file(result_df)
-        return markdown_table, file_path
+        return summary_df, file_path

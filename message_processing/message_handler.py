@@ -20,18 +20,15 @@ class MessageHandler:
         try:
             response_message = await self.processor.process_message(message, channel_id)
 
+            if not response_message:
+                response_message = "Query executed successfully, but no data was returned."
+
             # If the message is in a thread, reply in the thread
-            if thread_ts:
-                await self.client.chat_postMessage(
-                    channel=channel_id,
-                    text=response_message,
-                    thread_ts=thread_ts
-                )
-            else:
-                await self.client.chat_postMessage(
-                    channel=channel_id,
-                    text=response_message
-                )
+            await self.client.chat_postMessage(
+                channel=channel_id,
+                text=response_message,
+                thread_ts=thread_ts
+            )
 
             logging.info(f"Response sent to channel {channel_id}")
 

@@ -21,13 +21,6 @@ class DataFrameHandler:
         return summary
 
     @staticmethod
-    def convert_df_to_markdown(df: pd.DataFrame) -> str:
-        logging.info("Converting DataFrame to Markdown format")
-        markdown = df.to_markdown(index=False)
-        logging.info(f"DataFrame converted to Markdown:\n{markdown}")
-        return markdown
-
-    @staticmethod
     def save_dataframe_to_file(df: pd.DataFrame, prefix: str = "query_result") -> str:
         logging.info("Saving DataFrame to file")
         try:
