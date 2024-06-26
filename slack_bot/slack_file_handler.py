@@ -1,3 +1,5 @@
+# slack_bot/slack_file_handler.py
+
 import logging
 import os
 import aiohttp
@@ -84,11 +86,11 @@ class SlackFileHandler:
         # Implement your file processing logic here
         # For example, you might want to read the file, perform some analysis, etc.
         logging.info(f"Processing file: {file_path}")
-        # After processing, you might want to send a message to the channel
-        await self.client.chat_postMessage(
-            channel=channel_id,
-            text=f"File {os.path.basename(file_path)} has been processed successfully."
-        )
+        # Comment out or remove the following lines to stop sending the processing message
+        # await self.client.chat_postMessage(
+        #     channel=channel_id,
+        #     text=f"File {os.path.basename(file_path)} has been processed successfully."
+        # )
 
     async def send_unsupported_file_message(self, channel_id, filename):
         await self.client.chat_postMessage(

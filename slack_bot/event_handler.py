@@ -1,7 +1,10 @@
+# slack_bot/event_handler.py
+
 import logging
 from slack_sdk.web.async_client import AsyncWebClient
 from message_processing.message_handler import MessageHandler
 from slack_bot.slack_file_handler import SlackFileHandler
+from slack_bot.logger import LoggerSetup  # Import LoggerSetup
 
 
 class EventHandler:
@@ -9,14 +12,15 @@ class EventHandler:
         self.client = client
         self.message_handler = MessageHandler(client)
         self.file_handler = SlackFileHandler(client)
-        logging.getLogger().setLevel(logging.INFO)
+        LoggerSetup.setup_logging()  # Call the logging setup method
+        self.logger = logging.getLogger(self.__class__.__name__)
 
     async def handle_event(self, event):
-        logging.info(f"Handling event: {event.get('type')}")
+        self.logger.info(f"Handling event: {event.get('type')}")
 
         # Ignore messages sent by the bot itself
         if 'bot_id' in event or event.get('subtype') == 'bot_message':
-            logging.info("Ignoring bot message")
+            self.logger.info("Ignoring bot message")
             return
 
         event_type = event.get('type')
@@ -26,6 +30,6 @@ class EventHandler:
             elif event_type == 'file_shared':
                 await self.file_handler.handle(event)
             else:
-                logging.warning(f"Unhandled event type: {event_type}")
+                self.logger.warning(f"Unhandled event type: {event_type}")
         except Exception as e:
-            logging.error(f"Error handling {event_type} event: {str(e)}", exc_info=True)
+            self.logger.error(f"Error handling {event_type} event: {str(e)}", exc_info=True)

@@ -1,8 +1,10 @@
+# slack_bot/slack_bot.py
+
 import logging
 from slack_sdk.web.async_client import AsyncWebClient
-from fastapi import Request
 from dotenv import load_dotenv
 from slack_bot.event_handler import EventHandler
+from slack_bot.logger import LoggerSetup  # Import LoggerSetup
 import os
 
 load_dotenv()
@@ -10,14 +12,10 @@ load_dotenv()
 
 class SlackBot:
     def __init__(self):
+        LoggerSetup.setup_logging()  # Set up logging first
         self.client = AsyncWebClient(token=os.getenv('SLACK_BOT_TOKEN'))
         self.event_handler = EventHandler(self.client)
         self.processed_events = set()
-        self.setup_logging()
-
-    @staticmethod
-    def setup_logging():
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
     async def handle_event(self, data: dict):
         logging.info(f"Received request: {data}")
