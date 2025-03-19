@@ -11,7 +11,15 @@ slack_bot = SlackBot()
 async def slack_events(request: Request):
     data = await request.json()
     logging.info(f"Received event: {data}")
+    # Add more detailed logging
+    logging.info(f"Event type: {data.get('type')}")
+    if 'event' in data:
+        logging.info(f"Inner event type: {data.get('event', {}).get('type')}")
+        logging.info(f"User: {data.get('event', {}).get('user')}")
+        logging.info(f"Text: {data.get('event', {}).get('text')}")
+
     response = await slack_bot.handle_event(data)
+    logging.info(f"Response: {response}")
     return response
 
 
