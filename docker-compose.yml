@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  sqloslav:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sqloslav
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - DATA_DIR=/app/data
+      - DOWNLOAD_DIR=/app/downloads
+      - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      # Oracle database environment variables
+      - ORACLE_HOST=${ORACLE_HOST}
+      - ORACLE_PORT=${ORACLE_PORT}
+      - ORACLE_SINONIMI_SERVICE_NAME=${ORACLE_SINONIMI_SERVICE_NAME}
+      - ORACLE_SINONIMI_USER=${ORACLE_SINONIMI_USER}
+      - ORACLE_SINONIMI_PASSWORD=${ORACLE_SINONIMI_PASSWORD}
+      - ORACLE_SHOPSTER_SERVICE_NAME=${ORACLE_SHOPSTER_SERVICE_NAME}
+      - ORACLE_SHOPSTER_USER=${ORACLE_SHOPSTER_USER}
+      - ORACLE_SHOPSTER_PASSWORD=${ORACLE_SHOPSTER_PASSWORD}
+      - ORACLE_VIRGA_TEST_SERVICE_NAME=${ORACLE_VIRGA_TEST_SERVICE_NAME}
+      - ORACLE_VIRGA_TEST_USER=${ORACLE_VIRGA_TEST_USER}
+      - ORACLE_VIRGA_TEST_PASSWORD=${ORACLE_VIRGA_TEST_PASSWORD}
+      - ORACLE_VIRGA_SERVICE_NAME=${ORACLE_VIRGA_SERVICE_NAME}
+      - ORACLE_VIRGA_USER=${ORACLE_VIRGA_USER}
+      - ORACLE_VIRGA_PASSWORD=${ORACLE_VIRGA_PASSWORD}
+      # Vertica database environment variables
+      - VERTICA_HOST=${VERTICA_HOST}
+      - VERTICA_PORT=${VERTICA_PORT}
+      - VERTICA_USER=${VERTICA_USER}
+      - VERTICA_PASSWORD=${VERTICA_PASSWORD}
+      - VERTICA_DATABASE=${VERTICA_DATABASE}
+    volumes:
+      - ./data:/app/data
+      - ./downloads:/app/downloads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/app/scripts/healthcheck.sh"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - sqloslav_net
+
+networks:
+  sqloslav_net:
+    driver: bridge 
