@@ -22,15 +22,14 @@ class MessageHandler:
         try:
             response_message = await self.processor.process_message(message, channel_id)
 
-            # Comment out or remove the following block to stop sending the response message
-            # if not response_message:
-            #     response_message = "Query executed successfully, but no data was returned."
-            #
-            # await self.client.chat_postMessage(
-            #     channel=channel_id,
-            #     text=response_message,
-            #     thread_ts=thread_ts
-            # )
+            if not response_message:
+                response_message = "Query executed successfully, but no data was returned."
+            
+            await self.client.chat_postMessage(
+                channel=channel_id,
+                text=response_message,
+                thread_ts=thread_ts
+            )
 
             logging.info(f"Response processed for channel {channel_id}")
 
