@@ -50,8 +50,8 @@ $$ LANGUAGE plpgsql;
 
 -- Populate date dimension for the next 3 years
 SELECT populate_date_dimension(
-    CURRENT_DATE,
-    CURRENT_DATE + INTERVAL '3 years'
+    '2024-01-01'::DATE,
+    '2027-01-01'::DATE
 );
 
 -- Drop the function as it's no longer needed
