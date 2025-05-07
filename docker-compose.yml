@@ -34,6 +34,12 @@ services:
       - VERTICA_USER=${VERTICA_USER}
       - VERTICA_PASSWORD=${VERTICA_PASSWORD}
       - VERTICA_DATABASE=${VERTICA_DATABASE}
+      # PostgreSQL database environment variables
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-admin}
+      - POSTGRES_DB=${POSTGRES_DB:-sqloslav_dwh}
     volumes:
       - ./data:/app/data
       - ./downloads:/app/downloads
@@ -46,7 +52,35 @@ services:
       start_period: 5s
     networks:
       - sqloslav_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:15
+    container_name: sqloslav_postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-admin}
+      - POSTGRES_DB=${POSTGRES_DB:-sqloslav_dwh}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-sqloslav_dwh}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - sqloslav_net
 
 networks:
   sqloslav_net:
-    driver: bridge 
+    driver: bridge
+
+volumes:
+  postgres_data: 
