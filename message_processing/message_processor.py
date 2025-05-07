@@ -30,17 +30,14 @@ class MessageProcessor:
                 logging.info("Query executed successfully but returned no results.")
                 return self.format_no_results_message(sql_query)
 
-            summary_df, file_path = self.sql_executor.summarize_and_save(result_df)
-            slack_data = self.parser.prepare_slack_payload(summary_df.to_string())
+            _, file_path = self.sql_executor.summarize_and_save(result_df)
 
             try:
-                file_url = await self.slack_uploader.upload_file_to_slack(file_path, channel_id)
+                await self.slack_uploader.upload_file_to_slack(file_path, channel_id)
+                return ""  # Return empty string to avoid sending a message
             except Exception as e:
                 error_message = self.error_handler.handle_error(e, "uploading file to Slack", channel_id)
-                slack_data += f"\n{error_message}"
-
-            logging.info(f"Prepared Slack payload: {slack_data}")
-            return slack_data
+                return error_message
 
         except Exception as e:
             error_message = self.error_handler.handle_error(e, "processing message", channel_id)
