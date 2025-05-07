@@ -1,5 +1,5 @@
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import os
 import logging
 from database.base_database import BaseDatabase
@@ -27,8 +27,13 @@ class PostgresDatabase(BaseDatabase):
     def query(self, sql_query: str):
         logging.info(f"Database query: {sql_query}")
         try:
+            # Remove trailing semicolon if present
+            sql_query = sql_query.rstrip(';')
+            
             with self.engine.connect() as connection:
-                result = pd.read_sql_query(sql_query, connection)
+                # Use text() to create a proper SQL statement
+                stmt = text(sql_query)
+                result = pd.read_sql_query(stmt, connection)
                 logging.info(f"Query returned {len(result)} rows.")
                 return result
         except Exception as e:
