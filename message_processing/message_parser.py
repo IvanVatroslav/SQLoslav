@@ -7,13 +7,15 @@ class MessageParser:
         if len(lines) < 2:
             raise ValueError("Invalid message format. Expected at least two lines.")
 
-        db_type_line = lines[0].strip().lower()
+        trigger_line = lines[0].strip().lower()
         query = '\n'.join(lines[1:]).strip()
 
-        if db_type_line.startswith("sql,"):
-            db_type = db_type_line.split(",")[1].strip().upper()
+        # Check for SQLoslav trigger word (case insensitive)
+        if trigger_line == "sqloslav":
+            # Default to PostgreSQL for SQLoslav
+            db_type = "POSTGRES"
         else:
-            raise ValueError("Invalid database type format.")
+            raise ValueError("Invalid trigger word. Expected 'SQLoslav'.")
 
         clean_query = self.clean_query(query)
         return db_type, clean_query

@@ -2,9 +2,10 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# Install dependencies for health check
+# Install dependencies for health check and PostgreSQL client
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install dependencies
@@ -27,6 +28,7 @@ RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pyth
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org python-multipart==0.0.6
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org requests==2.28.2
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org apscheduler==3.10.1
+RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org psycopg2-binary==2.9.6
 
 # Copy the rest of the application
 COPY . .
