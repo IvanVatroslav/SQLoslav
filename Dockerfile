@@ -30,12 +30,15 @@ RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pyth
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org apscheduler==3.10.1
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org psycopg2-binary==2.9.6
 
-# Copy the rest of the application
+# Copy the application code
 COPY . .
 
 # Create necessary directories
 RUN mkdir -p /app/data /app/downloads
 RUN chmod +x /app/scripts/healthcheck.sh
+
+# Install the application as a package
+RUN pip install -e .
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
