@@ -40,8 +40,12 @@ class NLMessageProcessor(MessageProcessor):
             db_type, text = self.parser.parse_message(message)
             logging.info(f"Parsed message. DB Type: {db_type}, Text: {text}")
             
+            # Add extra debug logging to see if NL detection works
+            is_natural_language = self.query_generator.is_natural_language(text)
+            logging.info(f"Is natural language? {is_natural_language}")
+            
             # Check if the input is natural language or SQL
-            if self.query_generator.is_natural_language(text):
+            if is_natural_language:
                 logging.info("Detected natural language query, generating SQL")
                 
                 # Convert natural language to SQL
@@ -112,7 +116,7 @@ class NLMessageProcessor(MessageProcessor):
             channel_id: The Slack channel ID.
         """
         try:
-            self.slack_uploader.send_message_to_channel(message, channel_id)
+            await self.slack_uploader.send_message_to_channel(message, channel_id)
             logging.info(f"Sent message to Slack channel: {channel_id}")
         except Exception as e:
             logging.error(f"Error sending message to Slack: {str(e)}", exc_info=True) 

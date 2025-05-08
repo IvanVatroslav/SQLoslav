@@ -29,6 +29,8 @@ RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pyth
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org requests==2.28.2
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org apscheduler==3.10.1
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org psycopg2-binary==2.9.6
+# Explicitly install mistralai package
+RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org mistralai==0.1.4
 
 # Copy the application code
 COPY . .
@@ -48,8 +50,12 @@ done\n\
 # Initialize database\n\
 echo "Initializing database..."\n\
 for script in database/init/*.sql; do\n\
-  echo "Executing $script..."\n\
-  PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DB -f "$script"\n\
+  if [[ "$script" != *"03_populate_date_dimension.sql"* ]]; then\n\
+    echo "Executing $script..."\n\
+    PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DB -f "$script"\n\
+  else\n\
+    echo "Skipping $script due to known issues"\n\
+  fi\n\
 done\n\
 \n\
 # Start the application\n\

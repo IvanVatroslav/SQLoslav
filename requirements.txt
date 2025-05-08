@@ -15,4 +15,4 @@ psycopg2-binary==2.9.6
 pytest
 pytest-cov
 google-cloud-secret-manager
-mistralai 
+mistralai==0.1.4 

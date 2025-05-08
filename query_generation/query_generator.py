@@ -41,22 +41,53 @@ class QueryGenerator:
             A string representation of the database schema.
         """
         schema = """
-        Table: Users
-        Columns: user_id (INT, PRIMARY KEY), name (VARCHAR), city (VARCHAR), 
-                email (VARCHAR), signup_date (DATE), last_login (TIMESTAMP)
+        # This schema represents a star schema data warehouse for sales data
+        
+        Table: DimCustomer
+        Columns: customer_key (INT, PRIMARY KEY), first_name (VARCHAR), last_name (VARCHAR), 
+                email (VARCHAR), address (VARCHAR), city (VARCHAR), state (VARCHAR),
+                country (VARCHAR), postal_code (VARCHAR), phone (VARCHAR),
+                created_at (TIMESTAMP)
 
-        Table: Products
-        Columns: product_id (INT, PRIMARY KEY), name (VARCHAR), category (VARCHAR),
-                price (DECIMAL), description (TEXT), created_at (TIMESTAMP)
+        Table: DimProduct
+        Columns: product_key (INT, PRIMARY KEY), name (VARCHAR), category (VARCHAR),
+                subcategory (VARCHAR), brand (VARCHAR), price_usd (DECIMAL),
+                cost_usd (DECIMAL), description (TEXT)
                 
-        Table: Orders
-        Columns: order_id (INT, PRIMARY KEY), user_id (INT, FOREIGN KEY to Users.user_id),
-                order_date (DATE), total_amount (DECIMAL), status (VARCHAR)
+        Table: DimStore
+        Columns: store_key (INT, PRIMARY KEY), name (VARCHAR), 
+                address (VARCHAR), city (VARCHAR), state (VARCHAR),
+                country (VARCHAR), postal_code (VARCHAR), phone (VARCHAR),
+                manager_name (VARCHAR), open_date (DATE)
                 
-        Table: OrderItems
-        Columns: item_id (INT, PRIMARY KEY), order_id (INT, FOREIGN KEY to Orders.order_id),
-                product_id (INT, FOREIGN KEY to Products.product_id), quantity (INT),
-                price (DECIMAL)
+        Table: DimEmployee
+        Columns: employee_key (INT, PRIMARY KEY), first_name (VARCHAR), last_name (VARCHAR),
+                position (VARCHAR), hire_date (DATE), salary (DECIMAL),
+                store_key (INT, FOREIGN KEY to DimStore.store_key)
+                
+        Table: DimDate
+        Columns: date_key (INT, PRIMARY KEY), full_date (DATE), 
+                day_of_week (INT), day_name (VARCHAR), day_of_month (INT), 
+                day_of_year (INT), week_of_year (INT), month (INT), 
+                month_name (VARCHAR), quarter (INT), year (INT),
+                is_weekend (BOOLEAN), is_holiday (BOOLEAN)
+                
+        Table: DimCurrency
+        Columns: currency_key (INT, PRIMARY KEY), currency_code (VARCHAR),
+                currency_name (VARCHAR), currency_rate (DECIMAL)
+                
+        Table: FactSales
+        Columns: sales_key (BIGINT, PRIMARY KEY), 
+                customer_key (INT, FOREIGN KEY to DimCustomer.customer_key),
+                product_key (INT, FOREIGN KEY to DimProduct.product_key),
+                store_key (INT, FOREIGN KEY to DimStore.store_key),
+                employee_key (INT, FOREIGN KEY to DimEmployee.employee_key),
+                date_key (INT, FOREIGN KEY to DimDate.date_key),
+                currency_key (INT, FOREIGN KEY to DimCurrency.currency_key),
+                hour (INT), minute (INT), quantity (INT),
+                unit_price (DECIMAL), unit_price_usd (DECIMAL),
+                total_price (DECIMAL), total_price_usd (DECIMAL),
+                transaction_time (TIMESTAMP)
         """
         return schema.strip()
 
