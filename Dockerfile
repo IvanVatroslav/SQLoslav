@@ -30,7 +30,7 @@ RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pyth
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org apscheduler==3.10.1
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org psycopg2-binary==2.9.6
 # Explicitly install mistralai package
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org mistralai
+RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org mistralai==0.0.12
 
 # Copy the application code
 COPY . .

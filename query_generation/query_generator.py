@@ -14,7 +14,7 @@ class QueryGenerator:
     using the Mistral AI API.
     """
 
-    def __init__(self, mistral_model: str = "mistral-large-latest"):
+    def __init__(self, mistral_model: str = "mistral-medium"):
         """
         Initialize the QueryGenerator.
 
@@ -110,8 +110,8 @@ class QueryGenerator:
             # Call the Mistral AI API
             response = self.client.chat(
                 messages=[
-                    ChatMessage(role="system", content=prompt["system"]),
-                    ChatMessage(role="user", content=prompt["user"])
+                    {"role": "system", "content": prompt["system"]},
+                    {"role": "user", "content": prompt["user"]}
                 ],
                 model=self.model,
                 temperature=0.1,  # Low temperature for more deterministic responses
@@ -119,7 +119,7 @@ class QueryGenerator:
             )
             
             # Extract the SQL query from the response
-            sql_query, metadata = self._extract_sql_from_response(response.choices[0].message.content)
+            sql_query, metadata = self._extract_sql_from_response(response["choices"][0]["message"]["content"])
             
             self.logger.info(f"Generated SQL query: {sql_query}")
             return sql_query, metadata
