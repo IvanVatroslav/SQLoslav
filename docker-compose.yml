@@ -13,6 +13,8 @@ services:
       - DATA_DIR=/app/data
       - DOWNLOAD_DIR=/app/downloads
       - SLACK_BOT_TOKEN=${SLACK_BOT_TOKEN}
+      # Mistral API key for natural language processing
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
       # Oracle database environment variables
       - ORACLE_HOST=${ORACLE_HOST}
       - ORACLE_PORT=${ORACLE_PORT}

@@ -4,6 +4,12 @@ class MessageParser:
 
     def parse_message(self, message: str):
         lines = message.strip().split('\n')
+        
+        # Handle case where message is just "SQLoslav" with no query
+        if len(lines) == 1 and lines[0].strip().lower() == "sqloslav":
+            return "POSTGRES", ""
+            
+        # Check if we have at least two lines (trigger word + query)
         if len(lines) < 2:
             raise ValueError("Invalid message format. Expected at least two lines.")
 

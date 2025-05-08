@@ -21,8 +21,14 @@ if MISTRAL_API_KEY:
 else:
     error_msg = "MISTRAL_API_KEY not found in environment variables. Make sure it's set in your .env file or in your hosting environment."
     logger.error(error_msg)
-    # Raise an exception to prevent the application from starting without the key
-    raise ValueError(error_msg)
+    # Instead of raising an exception, set to a placeholder value and let the application handle it gracefully
+    # This allows the app to start, but natural language features will fail with proper error messages
+    MISTRAL_API_KEY = "MISSING_KEY"
+    logger.warning("Application will start, but natural language features will be disabled.")
+
+# Returns True if we have a valid API key, False otherwise
+def has_valid_api_key():
+    return MISTRAL_API_KEY and MISTRAL_API_KEY != "MISSING_KEY"
 
 # You can add other configuration variables here as needed.
 
@@ -31,7 +37,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     
     # This part is for testing the configuration loading directly
-    if MISTRAL_API_KEY:
+    if has_valid_api_key():
         print(f"Successfully loaded MISTRAL_API_KEY: {MISTRAL_API_KEY[:5]}... (partially hidden for security)")
     else:
         print("Failed to load MISTRAL_API_KEY. Make sure it's set in your .env file or environment.") 

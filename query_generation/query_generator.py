@@ -5,7 +5,7 @@ from typing import Dict, Optional, Tuple, Union
 from mistralai.client import MistralClient
 from mistralai.models.chat_completion import ChatMessage
 
-from config.mistral_config import MISTRAL_API_KEY
+from config.mistral_config import MISTRAL_API_KEY, has_valid_api_key
 
 
 class QueryGenerator:
@@ -21,12 +21,15 @@ class QueryGenerator:
         Args:
             mistral_model: The Mistral AI model to use for query generation.
         """
-        if not MISTRAL_API_KEY:
-            raise ValueError("MISTRAL_API_KEY not found. Please set it in your .env file.")
-        
-        self.client = MistralClient(api_key=MISTRAL_API_KEY)
         self.model = mistral_model
         self.logger = logging.getLogger(__name__)
+        
+        # Only initialize the client if we have a valid API key
+        if has_valid_api_key():
+            self.client = MistralClient(api_key=MISTRAL_API_KEY)
+        else:
+            self.client = None
+            self.logger.warning("Mistral AI client not initialized due to missing API key")
         
         # In a more advanced implementation, this would be loaded from a database
         # or configuration file. For this first phase, we'll hardcode a sample schema.
@@ -103,15 +106,21 @@ class QueryGenerator:
         """
         self.logger.info(f"Generating SQL for question: {question}")
         
+        # Check if we have a client before proceeding
+        if not self.client:
+            error_message = "Mistral AI API key is missing or invalid. Please set the MISTRAL_API_KEY environment variable."
+            self.logger.error(error_message)
+            raise RuntimeError(error_message)
+        
         # Construct the prompt for the Mistral AI model
         prompt = self._build_prompt(question)
         
         try:
-            # Call the Mistral AI API
+            # Call the Mistral AI API with ChatMessage objects instead of dictionaries
             response = self.client.chat(
                 messages=[
-                    {"role": "system", "content": prompt["system"]},
-                    {"role": "user", "content": prompt["user"]}
+                    ChatMessage(role="system", content=prompt["system"]),
+                    ChatMessage(role="user", content=prompt["user"])
                 ],
                 model=self.model,
                 temperature=0.1,  # Low temperature for more deterministic responses
