@@ -116,12 +116,14 @@ class QueryGenerator:
         prompt = self._build_prompt(question)
         
         try:
-            # Call the Mistral AI API with ChatMessage objects instead of dictionaries
+            # In mistralai==0.0.12, ChatMessage objects need to be handled differently
+            # We need to use dictionaries directly instead
+            system_message = {"role": "system", "content": prompt["system"]}
+            user_message = {"role": "user", "content": prompt["user"]}
+            
+            # Call the Mistral API with dictionaries instead of ChatMessage objects
             response = self.client.chat(
-                messages=[
-                    ChatMessage(role="system", content=prompt["system"]),
-                    ChatMessage(role="user", content=prompt["user"])
-                ],
+                messages=[system_message, user_message],
                 model=self.model,
                 temperature=0.1,  # Low temperature for more deterministic responses
                 max_tokens=1000
