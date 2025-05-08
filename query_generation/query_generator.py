@@ -2,8 +2,9 @@ import json
 import logging
 from typing import Dict, Optional, Tuple, Union
 
-from mistralai.client import MistralClient
-from mistralai.models.chat_completion import ChatMessage
+# Updated imports for the new Mistral API format
+from mistralai import Mistral
+from mistralai import models as mistral_models
 
 from config.mistral_config import MISTRAL_API_KEY, has_valid_api_key
 
@@ -14,7 +15,7 @@ class QueryGenerator:
     using the Mistral AI API.
     """
 
-    def __init__(self, mistral_model: str = "mistral-medium"):
+    def __init__(self, mistral_model: str = "mistral-small-latest"):
         """
         Initialize the QueryGenerator.
 
@@ -26,7 +27,7 @@ class QueryGenerator:
         
         # Only initialize the client if we have a valid API key
         if has_valid_api_key():
-            self.client = MistralClient(api_key=MISTRAL_API_KEY)
+            self.client = Mistral(api_key=MISTRAL_API_KEY)
         else:
             self.client = None
             self.logger.warning("Mistral AI client not initialized due to missing API key")
@@ -116,21 +117,25 @@ class QueryGenerator:
         prompt = self._build_prompt(question)
         
         try:
-            # In mistralai==0.0.12, ChatMessage objects need to be handled differently
-            # We need to use dictionaries directly instead
-            system_message = {"role": "system", "content": prompt["system"]}
-            user_message = {"role": "user", "content": prompt["user"]}
-            
-            # Call the Mistral API with dictionaries instead of ChatMessage objects
-            response = self.client.chat(
-                messages=[system_message, user_message],
+            # Call the Mistral API with the new format
+            response = self.client.chat.complete(
                 model=self.model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": prompt["system"]
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt["user"]
+                    }
+                ],
                 temperature=0.1,  # Low temperature for more deterministic responses
                 max_tokens=1000
             )
             
-            # Extract the SQL query from the response
-            sql_query, metadata = self._extract_sql_from_response(response["choices"][0]["message"]["content"])
+            # Extract the SQL query from the response (new format)
+            sql_query, metadata = self._extract_sql_from_response(response.choices[0].message.content)
             
             self.logger.info(f"Generated SQL query: {sql_query}")
             return sql_query, metadata
