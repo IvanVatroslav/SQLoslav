@@ -47,3 +47,26 @@ class SlackUploader:
                 else:
                     self.logger.error(f"Failed to download file. Status: {resp.status}")
                     raise Exception(f"File download failed with status {resp.status}")
+
+    async def send_message_to_channel(self, message: str, channel_id: str) -> dict:
+        """
+        Sends a text message to a Slack channel.
+        
+        Args:
+            message: The text message to send.
+            channel_id: The Slack channel ID to send the message to.
+            
+        Returns:
+            The response from the Slack API.
+        """
+        self.logger.info(f"Sending message to Slack channel: {channel_id}")
+        try:
+            response = await self.client.chat_postMessage(
+                channel=channel_id,
+                text=message
+            )
+            self.logger.info(f"Message sent successfully to channel: {channel_id}")
+            return response
+        except Exception as e:
+            self.logger.error(f"Error sending message to Slack: {str(e)}")
+            raise
