@@ -1,270 +1,100 @@
-import json
 import logging
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Tuple
 
-# Updated imports for the new Mistral API format
-from mistralai import Mistral
-from mistralai import models as mistral_models
+from core.config import config # New config import
+from .llm.base import LLMProviderInterface # Import the interface
+from .llm.mistral_provider import MistralLLMProvider # Import concrete Mistral provider
 
-from config.mistral_config import MISTRAL_API_KEY, has_valid_api_key
+# Remove old Mistral-specific imports if they are now handled by MistralLLMProvider
+# import json
+# from mistralai import Mistral 
+# from mistralai import models as mistral_models # Check if still needed or handled by MistralClient
+# from config.mistral_config import MISTRAL_API_KEY, has_valid_api_key # Old config
 
+# Helper to create providers (can be expanded for more providers)
+def get_llm_provider(provider_name: str) -> LLMProviderInterface:
+    if provider_name.lower() == "mistral":
+        # Configuration for Mistral (like API key, model) is handled within MistralLLMProvider using core.config
+        return MistralLLMProvider()
+    # Add other providers here:
+    # elif provider_name.lower() == "openai":
+    # return OpenAILLMProvider() 
+    else:
+        raise ValueError(f"Unsupported LLM provider: {provider_name}")
 
 class QueryGenerator:
     """
     Handles natural language processing and conversion to SQL queries
-    using the Mistral AI API.
+    by delegating to a configured LLM provider.
     """
 
-    def __init__(self, mistral_model: str = "mistral-small-latest"):
+    def __init__(self):
         """
         Initialize the QueryGenerator.
-
-        Args:
-            mistral_model: The Mistral AI model to use for query generation.
+        It will load the LLM provider based on application configuration.
         """
-        self.model = mistral_model
         self.logger = logging.getLogger(__name__)
+        self.schema_name = config.db_schema_name # Get schema name from config
         
-        # Only initialize the client if we have a valid API key
-        if has_valid_api_key():
-            self.client = Mistral(api_key=MISTRAL_API_KEY)
-        else:
-            self.client = None
-            self.logger.warning("Mistral AI client not initialized due to missing API key")
-        
-        # In a more advanced implementation, this would be loaded from a database
-        # or configuration file. For this first phase, we'll hardcode a sample schema.
-        self.schema = self._get_sample_schema()
-    
-    def _get_sample_schema(self) -> str:
-        """
-        Returns a sample database schema as a string.
-        This is a simplified version for initial testing.
-        
-        Returns:
-            A string representation of the database schema.
-        """
-        schema = """
-        # This schema represents a star schema data warehouse for sales data
-        
-        Table: DimCustomer
-        Columns: customer_key (INT, PRIMARY KEY), first_name (VARCHAR), last_name (VARCHAR), 
-                email (VARCHAR), address (VARCHAR), city (VARCHAR), state (VARCHAR),
-                country (VARCHAR), postal_code (VARCHAR), phone (VARCHAR),
-                created_at (TIMESTAMP)
-
-        Table: DimProduct
-        Columns: product_key (INT, PRIMARY KEY), name (VARCHAR), category (VARCHAR),
-                subcategory (VARCHAR), brand (VARCHAR), price_usd (DECIMAL),
-                cost_usd (DECIMAL), description (TEXT)
-                
-        Table: DimStore
-        Columns: store_key (INT, PRIMARY KEY), name (VARCHAR), 
-                address (VARCHAR), city (VARCHAR), state (VARCHAR),
-                country (VARCHAR), postal_code (VARCHAR), phone (VARCHAR),
-                manager_name (VARCHAR), open_date (DATE)
-                
-        Table: DimEmployee
-        Columns: employee_key (INT, PRIMARY KEY), first_name (VARCHAR), last_name (VARCHAR),
-                position (VARCHAR), hire_date (DATE), salary (DECIMAL),
-                store_key (INT, FOREIGN KEY to DimStore.store_key)
-                
-        Table: DimDate
-        Columns: date_key (INT, PRIMARY KEY), full_date (DATE), 
-                day_of_week (INT), day_name (VARCHAR), day_of_month (INT), 
-                day_of_year (INT), week_of_year (INT), month (INT), 
-                month_name (VARCHAR), quarter (INT), year (INT),
-                is_weekend (BOOLEAN), is_holiday (BOOLEAN)
-                
-        Table: DimCurrency
-        Columns: currency_key (INT, PRIMARY KEY), currency_code (VARCHAR),
-                currency_name (VARCHAR), currency_rate (DECIMAL)
-                
-        Table: FactSales
-        Columns: sales_key (BIGINT, PRIMARY KEY), 
-                customer_key (INT, FOREIGN KEY to DimCustomer.customer_key),
-                product_key (INT, FOREIGN KEY to DimProduct.product_key),
-                store_key (INT, FOREIGN KEY to DimStore.store_key),
-                employee_key (INT, FOREIGN KEY to DimEmployee.employee_key),
-                date_key (INT, FOREIGN KEY to DimDate.date_key),
-                currency_key (INT, FOREIGN KEY to DimCurrency.currency_key),
-                hour (INT), minute (INT), quantity (INT),
-                unit_price (DECIMAL), unit_price_usd (DECIMAL),
-                total_price (DECIMAL), total_price_usd (DECIMAL),
-                transaction_time (TIMESTAMP)
-        """
-        return schema.strip()
+        try:
+            self.logger.info(f"Initializing LLM provider: {config.llm_provider_name} for schema: {self.schema_name}")
+            self.llm_handler: LLMProviderInterface = get_llm_provider(config.llm_provider_name)
+        except ValueError as e:
+            self.logger.error(f"Failed to initialize LLM provider: {str(e)}", exc_info=True)
+            # Depending on desired behavior, either raise e or fallback to a default/dummy provider
+            raise  # Re-raise the error to halt initialization if provider is crucial
 
     def generate_sql_from_natural_language(self, question: str) -> Tuple[str, Dict]:
         """
-        Takes a natural language question and generates a SQL query.
+        Takes a natural language question and generates a SQL query
+        using the configured LLM provider and schema.
         
         Args:
             question: A natural language question about the database.
             
         Returns:
-            A tuple containing the generated SQL query and additional metadata.
+            A tuple containing the generated SQL query and additional metadata from the LLM provider.
         """
-        self.logger.info(f"Generating SQL for question: {question}")
+        self.logger.info(f"Delegating SQL generation for question: '{question}' to {config.llm_provider_name} for schema '{self.schema_name}'")
         
-        # Check if we have a client before proceeding
-        if not self.client:
-            error_message = "Mistral AI API key is missing or invalid. Please set the MISTRAL_API_KEY environment variable."
+        if not self.llm_handler:
+            error_message = "LLM handler not initialized. Cannot generate SQL."
             self.logger.error(error_message)
             raise RuntimeError(error_message)
-        
-        # Construct the prompt for the Mistral AI model
-        prompt = self._build_prompt(question)
-        
+            
         try:
-            # Call the Mistral API with the new format
-            response = self.client.chat.complete(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": prompt["system"]
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt["user"]
-                    }
-                ],
-                temperature=0.1,  # Low temperature for more deterministic responses
-                max_tokens=1000
-            )
-            
-            # Extract the SQL query from the response (new format)
-            sql_query, metadata = self._extract_sql_from_response(response.choices[0].message.content)
-            
-            self.logger.info(f"Generated SQL query: {sql_query}")
+            # The llm_handler is responsible for using the correct schema context
+            sql_query, metadata = self.llm_handler.generate_sql(question, self.schema_name)
+            self.logger.info(f"SQL query generated by LLM provider: {sql_query}")
             return sql_query, metadata
-            
         except Exception as e:
-            self.logger.error(f"Error calling Mistral AI API: {str(e)}", exc_info=True)
-            raise RuntimeError(f"Failed to generate SQL query: {str(e)}")
-    
-    def _build_prompt(self, question: str) -> Dict[str, str]:
-        """
-        Builds the prompt to send to the Mistral AI model.
-        
-        Args:
-            question: The natural language question.
-            
-        Returns:
-            A dictionary containing the system and user prompts.
-        """
-        system_prompt = f"""
-        You are an expert SQL query generator. Your task is to convert natural language questions into 
-        correct and efficient SQL queries based on the provided database schema.
-        
-        DATABASE SCHEMA:
-        {self.schema}
-        
-        INSTRUCTIONS:
-        1. Generate a valid SQL query that answers the user's question.
-        2. Only use tables and columns that exist in the schema.
-        3. Format your response in JSON with two fields:
-           - "sql": The generated SQL query
-           - "explanation": A brief explanation of what the query does
-        4. Do not include any text outside of the JSON structure.
-        5. If you can't generate a query due to ambiguity or missing information, 
-           return a JSON with "error" and "message" fields explaining the issue.
-        """
-        
-        user_prompt = f"Convert this question to SQL: {question}"
-        
-        return {
-            "system": system_prompt.strip(),
-            "user": user_prompt
-        }
-    
-    def _extract_sql_from_response(self, response_text: str) -> Tuple[str, Dict]:
-        """
-        Extracts the SQL query from the Mistral AI response.
-        
-        Args:
-            response_text: The text response from Mistral AI.
-            
-        Returns:
-            A tuple containing the SQL query string and additional metadata.
-        """
-        self.logger.debug(f"Raw Mistral response: {response_text}")
-        
-        # Try to extract JSON from the response
-        try:
-            # Look for JSON-like content and extract it
-            response_text = response_text.strip()
-            
-            # If the response is wrapped in triple backticks, extract the content
-            if response_text.startswith("```json") and response_text.endswith("```"):
-                response_text = response_text[7:-3].strip()
-            elif response_text.startswith("```") and response_text.endswith("```"):
-                response_text = response_text[3:-3].strip()
-            
-            # Parse the JSON
-            response_json = json.loads(response_text)
-            
-            # If there's an error in the response, raise it
-            if "error" in response_json:
-                raise ValueError(response_json.get("message", "Unknown error in query generation"))
-            
-            # Extract the SQL query and any metadata
-            sql_query = response_json.get("sql", "")
-            
-            # Return the SQL query and additional metadata
-            metadata = {k: v for k, v in response_json.items() if k != "sql"}
-            return sql_query, metadata
-            
-        except json.JSONDecodeError:
-            self.logger.warning(f"Failed to parse JSON from response: {response_text}")
-            # If we couldn't parse JSON, try to extract SQL directly using heuristics
-            
-            # Look for SQL keywords
-            if "SELECT" in response_text.upper():
-                # Extract the SQL query using simple heuristics
-                lines = response_text.split("\n")
-                sql_lines = []
-                capturing = False
-                
-                for line in lines:
-                    if "SELECT" in line.upper() and not capturing:
-                        capturing = True
-                    
-                    if capturing:
-                        sql_lines.append(line)
-                        
-                        # Stop capturing when we reach the end of the SQL query
-                        if ";" in line:
-                            break
-                
-                if sql_lines:
-                    sql_query = "\n".join(sql_lines).strip()
-                    return sql_query, {"extracted": "heuristic", "original_response": response_text}
-            
-            # If we still couldn't extract SQL, return the entire response as is
-            return response_text, {"extracted": "raw", "parse_error": "Could not extract structured SQL"}
-    
+            # Catching Exception to be generic, specific providers might raise specific errors
+            self.logger.error(f"LLM provider failed to generate SQL: {str(e)}", exc_info=True)
+            # Re-raise or handle as appropriate for the application
+            # For example, return a user-friendly error message in metadata
+            # For now, re-raising to ensure errors are visible.
+            raise RuntimeError(f"Failed to generate SQL query via {config.llm_provider_name}: {str(e)}")
+
     def is_natural_language(self, text: str) -> bool:
         """
-        Determines if the input is likely natural language rather than SQL.
+        Determines if the input is likely natural language rather than SQL,
+        delegating to the configured LLM provider.
         
         Args:
-            text: The input text to analyze.
+            text: The input text.
             
         Returns:
-            True if the text is likely natural language, False if it's likely SQL.
+            True if the text is considered natural language, False otherwise.
         """
-        # Simple heuristic: Check if the text starts with common SQL keywords
-        sql_starters = ["SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP", "WITH"]
-        
-        # Normalize the text for comparison
-        normalized_text = text.strip().upper()
-        
-        # Check if it starts with any SQL keyword
-        for starter in sql_starters:
-            if normalized_text.startswith(starter):
-                return False
-        
-        # If it doesn't start with SQL keywords, it's likely natural language
-        return True 
+        if not self.llm_handler:
+            self.logger.warning("LLM handler not initialized. Defaulting is_natural_language to False (expecting SQL).")
+            # Fallback behavior if handler isn't there - might need adjustment based on desired resilience
+            return False 
+            
+        return self.llm_handler.is_natural_language(text)
+
+# Removed:
+# _get_sample_schema() - This logic is now within MistralLLMProvider for the default case
+# _build_prompt() - This is now within MistralLLMProvider
+# _extract_sql_from_response() - This is now within MistralLLMProvider
+# Direct Mistral client initialization and API calls
