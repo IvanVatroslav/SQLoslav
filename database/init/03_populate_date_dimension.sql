@@ -3,7 +3,7 @@ SET search_path TO star_dwh;
 
 -- Function to populate date dimension
 CREATE OR REPLACE FUNCTION populate_date_dimension(start_date DATE, end_date DATE)
-RETURNS void AS $$
+RETURNS void AS $func$
 DECLARE
     current_date DATE;
     date_key INT;
@@ -46,7 +46,7 @@ BEGIN
         current_date := current_date + INTERVAL '1 day';
     END LOOP;
 END;
-$$ LANGUAGE plpgsql;
+$func$ LANGUAGE plpgsql;
 
 -- Populate date dimension for the next 3 years
 SELECT populate_date_dimension(

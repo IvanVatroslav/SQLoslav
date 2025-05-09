@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Dict, Tuple
 
-from mistralai import MistralClient # Corrected import based on typical usage
+from mistralai import Mistral # Corrected import based on typical usage
 # from mistralai.models.chat_completion import ChatMessage # For older versions
 from mistralai.models.chat_completion import ChatMessage # Assuming this is the modern way or use mistral_models from QueryGenerator
 
@@ -22,7 +22,7 @@ class MistralLLMProvider(LLMProviderInterface):
             self.logger.error("MISTRAL_API_KEY not found in environment or config.")
             raise ValueError("MISTRAL_API_KEY is required for MistralLLMProvider.")
         
-        self.client = MistralClient(api_key=config.mistral_api_key)
+        self.client = Mistral(api_key=config.mistral_api_key)
         # The schema will be passed to generate_sql or handled internally based on schema_name
         # For now, let's replicate the existing behavior by having a method for the default schema.
         self.default_schema_content = self._get_default_star_dwh_schema()
