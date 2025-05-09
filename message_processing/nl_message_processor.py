@@ -40,7 +40,14 @@ class NLMessageProcessor(MessageProcessor):
             db_type, text = self.parser.parse_message(message)
             logging.info(f"Parsed message. DB Type: {db_type}, Text: {text}")
             
-            # If text is empty, return a help message
+            # Check for debug mode and strip the flag
+            is_debug_mode = False
+            if ", debug" in text.lower():
+                is_debug_mode = True
+                text = text.lower().replace(", debug", "").strip() # Remove flag and leading/trailing spaces
+                logging.info(f"Debug mode activated. Original message stripped to: {text}")
+            
+            # If text is empty after stripping debug, return a help message
             if not text:
                 return "I'm SQLoslav, your SQL assistant! Please ask me a question or provide a SQL query to execute."
             
@@ -81,8 +88,9 @@ class NLMessageProcessor(MessageProcessor):
                         
                     generated_message += "Executing the generated query now...\n"
                     
-                    # Send an initial message with the generated SQL
-                    await self.send_message_to_slack(generated_message, channel_id)
+                    # Send an initial message with the generated SQL only if in debug mode
+                    if is_debug_mode:
+                        await self.send_message_to_slack(generated_message, channel_id)
                     
                     # Use the existing SQL execution flow with the generated query
                     result_df = self.sql_executor.execute_sql(sql_query, db_type)
@@ -118,7 +126,17 @@ class NLMessageProcessor(MessageProcessor):
             else:
                 # It's a regular SQL query, use the standard processing
                 logging.info("Detected SQL query, using standard processing")
-                return await super().process_message(message, channel_id)
+                # We need to pass the original message here if it might contain ', debug'
+                # and super().process_message needs to be aware of it,
+                # or we handle debug stripping before this call for SQL too.
+                # For now, assuming direct SQL doesn't have the same verbose text output to suppress.
+                # If it does, this part needs further modification.
+                # Let's strip debug from the message if it's SQL as well, in case superclass needs clean message
+                if is_debug_mode: # If debug was parsed from a potentially SQL-like message
+                    message_to_superclass = message.lower().replace(", debug", "").strip()
+                else:
+                    message_to_superclass = message
+                return await super().process_message(message_to_superclass, channel_id)
                 
         except Exception as e:
             error_message = self.error_handler.handle_error(e, "processing message with NL capability", channel_id)
