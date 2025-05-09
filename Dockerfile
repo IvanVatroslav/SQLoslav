@@ -29,8 +29,10 @@ RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pyth
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org requests==2.28.2
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org apscheduler==3.10.1
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org psycopg2-binary==2.9.6
-# Explicitly install mistralai package
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org mistralai==0.0.12
+# Install pydantic 2.x first for compatibility with newer mistralai
+RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org "pydantic>=2.5.2"
+# Explicitly install mistralai package with newest version
+RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org mistralai>=1.7.0
 
 # Copy the application code
 COPY . .
