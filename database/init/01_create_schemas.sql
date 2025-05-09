@@ -9,4 +9,7 @@ SET search_path TO oltp_3nf, star_dwh, snowflake_dwh, public;
 -- Grant permissions
 GRANT USAGE ON SCHEMA oltp_3nf TO CURRENT_USER;
 GRANT USAGE ON SCHEMA star_dwh TO CURRENT_USER;
-GRANT USAGE ON SCHEMA snowflake_dwh TO CURRENT_USER; 
+GRANT USAGE ON SCHEMA snowflake_dwh TO CURRENT_USER;
+
+-- Set default search_path for the user
+ALTER USER CURRENT_USER SET search_path = star_dwh, public; 

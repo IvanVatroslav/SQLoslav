@@ -35,12 +35,8 @@ done\n\
 # Initialize database\n\
 echo "Initializing database..."\n\
 for script in database/init/*.sql; do\n\
-  if [[ "$script" != *"03_populate_date_dimension.sql"* ]]; then\n\
-    echo "Executing $script..."\n\
-    PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DB -f "$script"\n\
-  else\n\
-    echo "Skipping $script due to known issues"\n\
-  fi\n\
+  echo "Executing $script..."\n\
+  PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DB -f "$script"\n\
 done\n\
 \n\
 # Start the application\n\
