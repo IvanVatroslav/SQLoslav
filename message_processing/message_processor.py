@@ -20,21 +20,30 @@ class MessageProcessor:
         logging.debug(f"Received message: {message}")
 
         try:
-            db_type, sql_query = self.parser.parse_message(message)
-            logging.info(f"Parsed message. DB Type: {db_type}, SQL Query: {sql_query}")
+            db_type, sql_query, is_debug_mode = self.parser.parse_message(message)
+            logging.info(f"Parsed message. DB Type: {db_type}, SQL Query: {sql_query}, Debug Mode: {is_debug_mode}")
+
+            if not sql_query:
+                return "Please provide a SQL query to execute after 'SQLoslav' or 'SQLoslav, debug'."
 
             result_df = self.sql_executor.execute_sql(sql_query, db_type)
             self.log_dataframe_info(result_df)
 
             if result_df.empty:
                 logging.info("Query executed successfully but returned no results.")
-                return self.format_no_results_message(sql_query)
+                if is_debug_mode:
+                    return self.format_no_results_message(sql_query)
+                else:
+                    return "Query executed successfully but returned no results."
 
             _, file_path = self.sql_executor.summarize_and_save(result_df)
 
             try:
                 await self.slack_uploader.upload_file_to_slack(file_path, channel_id)
-                return ""  # Return empty string to avoid sending a message
+                if is_debug_mode:
+                    return f"Query successful. Results are in the attached file: {os.path.basename(file_path)}"
+                else:
+                    return ""
             except Exception as e:
                 error_message = self.error_handler.handle_error(e, "uploading file to Slack", channel_id)
                 return error_message
@@ -55,7 +64,7 @@ class MessageProcessor:
     @staticmethod
     def format_no_results_message(sql_query: str) -> str:
         return (f"Query executed successfully but returned no results.\n"
-                f"SQL query: ```{sql_query}```\n"
+                f"SQL query (for debugging): ```{sql_query}```\n"
                 f"Please check your query and try again.")
 
     async def verify_uploaded_file(self, file_url: str, original_file_path: str) -> bool:
