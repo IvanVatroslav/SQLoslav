@@ -11,28 +11,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy requirements and install dependencies
 COPY requirements.txt .
 
-# First run helps diagnose SSL issues
+# Upgrade pip
 RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org pip --upgrade
 
-# Install packages one by one to better diagnose issues
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org fastapi==0.95.0
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org uvicorn==0.21.1
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org slack-sdk==3.21.3
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org python-dotenv==1.0.0
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org numpy==1.23.5
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org pandas==1.5.3
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org sqlalchemy==2.0.9
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org cx-oracle==8.3.0
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org vertica-python==1.1.1
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org aiohttp==3.8.4
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org python-multipart==0.0.6
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org requests==2.28.2
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org apscheduler==3.10.1
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org psycopg2-binary==2.9.6
-# Install pydantic 2.x first for compatibility with newer mistralai
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org "pydantic>=2.5.2"
-# Explicitly install mistralai package with newest version
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org mistralai>=1.7.0
+# Install all dependencies from requirements.txt
+RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org -r requirements.txt
 
 # Copy the application code
 COPY . .
